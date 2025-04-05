@@ -178,10 +178,83 @@ In early implementations, I observed the need for practical compatibility with t
     "mimeType": "text/html"
   }
 }
+```
 
-The uri included a server side rendered React component which was purified and inserted on the client using React's `dangerouslySetInnerHTML` in the models response message.
-This appraoch allowed the owner of the MCP server to fully control what UI was rendered alongside the MCP data response.
+The URI included a server-side rendered React component, which was purified and inserted on the client using React's `dangerouslySetInnerHTML` in the model's response message.
+This approach allowed the owner of the MCP server to fully control the UI rendered alongside the MCP data response.
 
+
+This is how I implemented it in my example project. It's quite a bit of boilerplate, which could be extracted into a separate package.
+```tsx
+ 
+const RenderToolWidget = ({ result }: { result: result }) => {
+  // Extract the resource from potentially nested structure
+  let resource: any;
+
+  if (result?.content && Array.isArray(result.content)) {
+    // Handle case where result has a content array (direct MCP response)
+    const resourceItem = result.content.find(
+      (item: any) => item.type === 'resource',
+    );
+    resource = resourceItem?.resource;
+  } else {
+    // Assume result is the resource itself
+    resource = result;
+  }
+
+  // For data URI containing HTML
+  if (resource?.uri?.startsWith('data:text/html')) {
+    try {
+      const htmlContent = decodeURIComponent(
+        resource.uri.replace('data:text/html,', ''),
+      );
+      
+      // Configure DOMPurify to keep all classes and styles
+      const sanitizeConfig = {
+        ADD_ATTR: ['class', 'style'],
+        ADD_TAGS: ['style'],
+        KEEP_CONTENT: true,
+        USE_PROFILES: { html: true },
+      };
+      
+      // Create a container element to isolate the widget styles
+      const containerId = `mcp-widget-${Math.random().toString(36).substring(2, 9)}`;
+      
+      // Extract styles from the HTML and make them scoped to our container
+      let styleContent = '';
+      const styleMatch = htmlContent.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+      if (styleMatch?.[1]) {
+        styleContent = styleMatch[1];
+      }
+      
+      // Extract the body content
+      let bodyContent = '';
+      const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      if (bodyMatch?.[1]) {
+        bodyContent = bodyMatch[1];
+      } else {
+        // If no body tags, assume the whole HTML is the content we want
+        // but remove any style tags first
+        bodyContent = htmlContent.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+      }
+
+      const sanitizedHtml = DOMPurify.sanitize(bodyContent, sanitizeConfig);
+
+      return (
+        <div 
+          id={containerId}
+          className="mcp-widget-container w-full overflow-hidden rounded-xl relative"
+          data-has-html-content="true"
+        >
+          <style dangerouslySetInnerHTML={{ __html: styleContent }} />
+          <div dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
+        </div>
+      );
+    } catch (e) {
+      console.error('Error parsing HTML content', e);
+    }
+  }
+```
 ---
 
 ## Interim: Embedding Widgets in `resource` Blocks
@@ -206,6 +279,7 @@ Until `type: "widget"` is accepted in the MCP spec, platforms may embed widget m
     }
   }
 }
+```
 
 --
 
