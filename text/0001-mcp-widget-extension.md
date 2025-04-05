@@ -1,5 +1,5 @@
 
-# 🧩 Model Context Protocol (MCP) Widget Extension — Draft Specification v0.1
+# Model Context Protocol (MCP) Widget Extension — Draft Specification v0.1
 
 **Author:** Nicklas Scharpff
 **Created:** 2025-04-03
@@ -8,7 +8,7 @@
 
 ---
 
-## 📌 Overview
+## Overview
 
 This extension introduces an optional `widget` field in MCP tool response payloads, enabling AI platforms to render **branded, interactive, and structured frontend components** (Model Context Widgets / MCWs) alongside traditional text responses.
 
@@ -16,7 +16,7 @@ The goal is to bridge structured backend data with **actionable UI elements**, w
 
 ---
 
-## ✅ Goals
+## Goals
 
 - Maintain full **backward compatibility** with MCP
 - Enable **rich UI rendering** inside AI interfaces (chat, voice, agent UIs)
@@ -25,7 +25,7 @@ The goal is to bridge structured backend data with **actionable UI elements**, w
 
 ---
 
-## 🧱 Example Response (Extended MCP)
+## Example Response (Extended MCP)
 
 ```json
 {
@@ -39,21 +39,21 @@ The goal is to bridge structured backend data with **actionable UI elements**, w
     "type": "iframe",
     "url": "https://apple.com/widgets/checkout?session=abc123",
     "sandbox": true,
-    "fallback_text": "Ordering an iPhone 15 for $999. Click here to confirm."
+    "fallback_text": "Ordering an iPhone 15 for $999. Please confirm."
   }
 }
 ```
 
 ---
 
-## 🧰 `widget` Object Specification
+## `widget` Object Specification
 
 ### Top-Level Fields
 
 | Field           | Type                                   | Required | Description                                                                 |
 |----------------|----------------------------------------|----------|-----------------------------------------------------------------------------|
-| `type`         | `"iframe"` \| `"html_embed"` \| `"web_component"` | ✅        | How the widget should be rendered                                           |
-| `fallback_text`| `string`                                | ✅        | What to show if widget rendering is not supported                          |
+| `type`         | `"iframe"` \| `"html_embed"` \| `"web_component"` | Yes        | How the widget should be rendered                                           |
+| `fallback_text`| `string`                                | Yes        | What to show if widget rendering is not supported                          |
 
 ---
 
@@ -139,7 +139,7 @@ The goal is to bridge structured backend data with **actionable UI elements**, w
 
 ---
 
-## 🛡 Security Considerations
+## Security Considerations
 
 - **Sandboxing is strongly recommended** for all rendering modes.
 - Widgets should not assume access to global DOM or parent app styles.
@@ -147,7 +147,7 @@ The goal is to bridge structured backend data with **actionable UI elements**, w
 
 ---
 
-## 🧠 Design Considerations
+## Design Considerations
 
 - Platforms may wrap widgets in a container for UX consistency.
 - Developers should support theming and accessibility where possible.
@@ -155,7 +155,7 @@ The goal is to bridge structured backend data with **actionable UI elements**, w
 
 ---
 
-## 🧪 Sample Use Cases
+## Sample Use Cases
 
 - E-commerce checkout with brand UI (e.g., Apple, Amazon)
 - Ticketing or task management (Jira, Notion)
@@ -165,14 +165,58 @@ The goal is to bridge structured backend data with **actionable UI elements**, w
 
 ---
 
-## 📅 Versioning
+## Real-World Implementation Notes
+
+In early implementations, I observed the need for practical compatibility with the current MCP spec. Since `widget` is not yet a recognized top-level `type`, I used:
+
+```json
+{
+  "type": "resource",
+  "resource": {
+    "text": "Forecast preview",
+    "uri": "data:text/html,...",
+    "mimeType": "text/html"
+  }
+}
+
+The uri included a server side rendered React component which was purified and inserted on the client using React's `dangerouslySetInnerHTML` in the models response message.
+This appraoch allowed the owner of the MCP server to fully control what UI was rendered alongside the MCP data response.
+
+---
+
+## Interim: Embedding Widgets in `resource` Blocks
+
+Until `type: "widget"` is accepted in the MCP spec, platforms may embed widget metadata within a `resource` block:
+
+```json
+{
+  "type": "resource",
+  "resource": {
+    "text": "Forecast for San Francisco",
+    "uri": "data:text/html,...",
+    "mimeType": "text/html",
+    "x-widget": {
+      "type": "html_embed",
+      "fallback_text": "72°F and sunny in SF",
+      "props": {
+        "latitude": 37.77,
+        "longitude": -122.42
+      },
+      "bundle_url": "https://example.com/widgets/weather.bundle.js"
+    }
+  }
+}
+
+--
+
+## Versioning
 
 This spec represents **v0.1** of the `widget` extension to MCP.  
 It is expected to evolve based on community feedback and adoption.
 
 ---
 
-## 🙋 Call for Feedback
+## Call for Feedback
 
 Want to test, implement, or improve this spec?
 
@@ -186,5 +230,5 @@ Want to test, implement, or improve this spec?
 
 - [Anthropic Model Context Protocol (GitHub)](https://github.com/anthropics/model-context-protocol)
 - [This Spec GitHub Repo](https://github.com/mcp-widgets/rfcs)
-- [MCW Demo Site](#)
+- [MCW Demo Site](https://github.com/mcp-widgets/examples)
 
