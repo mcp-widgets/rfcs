@@ -294,8 +294,8 @@ It is expected to evolve based on community feedback and adoption.
 
 Want to test, implement, or improve this spec?
 
-- Open an issue or discussion: [GitHub link]
-- Try the demo: [demo link]
+- Open an issue or discussion: [issues](https://github.com/mcp-widgets/rfcs/issues)]
+- Try out the examples: [examples](https://github.com/mcp-widgets/examples)]
 - Share your ideas or implementations!
 
 ---
